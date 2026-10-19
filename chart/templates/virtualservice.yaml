@@ -1,0 +1,53 @@
+{{- $features := include "chart.features" . | fromYaml }}
+{{- if or .Values.route.enabled $features }}
+# hosts carry both a nip.io host (no real DNS needed -- resolves against
+# istio-ingressgateway's ClusterIP via kubectl port-forward) and a real
+# host on the shared apps.shirlenelim.se wildcard. gateways references
+# the Gateway by <namespace>/<name> since it lives once in istio-system
+# (repo/istio/gateway/), not per env like it used to.
+#
+# With active features (features.yaml), the plain service host and the
+# `mesh` gateway are added too, so in-cluster calls (e.g. service-a ->
+# service-b) get the same x-user routing as external ones -- provided
+# the caller forwards the x-user header.
+apiVersion: networking.istio.io/v1
+kind: VirtualService
+metadata:
+  name: {{ .Values.name }}
+spec:
+  hosts:
+    {{- if .Values.route.enabled }}
+    - {{ .Values.name }}.{{ include "chart.routeEnv" . }}.127.0.0.1.nip.io
+    - {{ .Values.name }}.{{ include "chart.routeEnv" . }}.apps.shirlenelim.se
+    {{- end }}
+    {{- if $features }}
+    - {{ .Values.name }}
+    {{- end }}
+  gateways:
+    {{- if .Values.route.enabled }}
+    - istio-system/sample-gateway
+    {{- end }}
+    {{- if $features }}
+    - mesh
+    {{- end }}
+  http:
+    {{- range $feature, $users := $features }}
+    - name: {{ $feature }}
+      match:
+        {{- range $users }}
+        - headers:
+            x-user:
+              exact: {{ . | quote }}
+        {{- end }}
+      route:
+        - destination:
+            host: {{ $.Values.name }}-{{ $feature }}
+            port:
+              number: 80
+    {{- end }}
+    - route:
+        - destination:
+            host: {{ .Values.name }}
+            port:
+              number: 80
+{{- end }}

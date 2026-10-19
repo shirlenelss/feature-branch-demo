@@ -1,0 +1,26 @@
+{{- /*
+One Deployment + Service per active feature (see chart.features). Each
+gets its own Service rather than sharing the main one, so plain k8s
+load-balancing never mixes feature pods into everyone else's traffic --
+only the VirtualService's x-user match sends requests here.
+*/ -}}
+{{- $root := . -}}
+{{- range $feature, $users := include "chart.features" . | fromYaml }}
+---
+{{ include "chart.deployment" (dict "Values" $root.Values "app" (printf "%s-%s-app" $root.Values.name $feature) "tag" $feature "replicas" $root.Values.featureBuild.replicas "resources" $root.Values.featureBuild.resources) }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ $root.Values.name }}-{{ $feature }}
+  labels:
+    app: {{ $root.Values.name }}-{{ $feature }}
+spec:
+  selector:
+    app: {{ $root.Values.name }}-{{ $feature }}-app
+  ports:
+    - port: 80
+      targetPort: {{ $root.Values.port }}
+      protocol: TCP
+  type: ClusterIP
+{{- end }}

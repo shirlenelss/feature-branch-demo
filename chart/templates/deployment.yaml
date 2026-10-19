@@ -1,0 +1,1 @@
+{{ include "chart.deployment" (dict "Values" .Values "app" (printf "%s-app" .Values.name) "tag" .Values.image.tag "replicas" .Values.replicas "resources" .Values.resources) }}

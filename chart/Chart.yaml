@@ -1,0 +1,7 @@
+apiVersion: v2
+name: service
+description: >-
+  One chart for every service (service-a, service-b); a service's own
+  values file under service/<name>/ picks which one is rendered.
+type: application
+version: 0.1.0

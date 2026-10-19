@@ -1,0 +1,13 @@
+# Test fixture: chart/features.yaml's example, pointed at a service that
+# actually exists in chart/service/ so the features render.
+users:
+  - alice
+  - bob
+
+services:
+  service-b:
+    feature-new-cart:
+      - alice
+      - bob
+    feature-promo:
+      - carol        # not in users → ignored

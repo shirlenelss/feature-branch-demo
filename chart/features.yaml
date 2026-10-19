@@ -1,0 +1,19 @@
+# Per-user feature routing. Each feature listed under a service is
+# deployed as its own build of that service (image tag = feature name,
+# e.g. service-a:feature-new-cart), and requests carrying an
+# `x-user: <name>` header for one of its listed users are routed to it
+# by the VirtualService. Everyone else keeps hitting the main build.
+#
+# `users` is the allowlist: a user listed under a feature but not here is
+# ignored, and a feature left with no users isn't deployed at all.
+users:
+  - alice
+  - bob
+
+services:
+  checkout-service:
+    feature-new-cart:
+      - alice
+      - bob
+    feature-promo:
+      - carol        # not in users → ignored
